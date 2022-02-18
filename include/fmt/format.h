@@ -346,8 +346,12 @@ class uint128_fallback {
 
  public:
   constexpr uint128_fallback(uint64_t value = 0) : lo_(value), hi_(0) {}
-  explicit operator int() const { return static_cast<int>(lo_); }
-  explicit operator uint64_t() const { return lo_; }
+
+  template <typename T, FMT_ENABLE_IF(std::is_integral<T>::value)>
+  explicit operator T() const {
+    return static_cast<T>(lo_);
+  }
+
   friend auto operator==(const uint128_fallback& lhs,
                          const uint128_fallback& rhs) -> bool {
     return lhs.hi_ == rhs.hi_ && lhs.lo_ == rhs.lo_;
@@ -368,6 +372,13 @@ class uint128_fallback {
   auto operator<<(int shift) const -> uint128_fallback {
     if (shift == 64) return {lo_, 0};
     return {hi_ << shift | (lo_ >> (64 - shift)), (lo_ << shift)};
+  }
+  FMT_CONSTEXPR void operator>>=(int shift) {
+    *this = *this >> shift;
+  }
+  FMT_CONSTEXPR void operator+=(uint64_t n) {
+    lo_ += n;
+    if (lo_ < n) ++hi_;
   }
 };
 
